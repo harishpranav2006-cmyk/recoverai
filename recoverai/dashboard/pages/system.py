@@ -29,19 +29,25 @@ def render_system_page() -> None:
             if st.button("🔄 Retry Connection", key="sys_retry_btn"):
                 st.rerun()
         else:
-            status_str = health.get("status", "ok")
-            db_connected = health.get("database_connected", True)
-            ml_loaded = health.get("ml_model_loaded", True)
+            status_str = str(health.get("status", "")).lower()
+            is_healthy = status_str in ["healthy", "ok", "alive"]
+            
+            db_status = str(health.get("database", "")).lower()
+            db_connected = db_status in ["connected", "healthy", "ok"] or health.get("database_connected", True)
+            
+            ml_status = str(health.get("ml_model", "")).lower()
+            ml_loaded = ml_status in ["available", "loaded", "ok"] or health.get("ml_model_loaded", True)
             
             c1, c2, c3 = st.columns(3)
             with c1:
-                st.metric(label="API Status", value="🟢 ONLINE" if status_str == "ok" else "⚠️ DEGRADED")
+                st.metric(label="API Status", value="🟢 ONLINE" if is_healthy else "⚠️ DEGRADED")
             with c2:
                 st.metric(label="Database", value="🟢 CONNECTED" if db_connected else "❌ DISCONNECTED")
             with c3:
                 st.metric(label="ML Model", value="🟢 LOADED" if ml_loaded else "⚠️ UNLOADED")
 
-            st.caption(f"System Version: `{health.get('version', '1.0.0')}` | Records in DB: `{health.get('total_payments_in_db', 50000):,}`")
+            st.caption(f"System Version: `{health.get('version', '2.0.0')}` • LLM Provider: `{health.get('llm_mode', 'rule_fallback')}`")
+
 
     st.divider()
 

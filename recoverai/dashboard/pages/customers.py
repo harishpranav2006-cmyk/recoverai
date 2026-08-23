@@ -106,8 +106,10 @@ def render_customers_page() -> None:
                 render_customer_context_card(cust_profile)
 
             if history_resp:
-                st.markdown(f"#### 💳 Payment History for `{selected_cid}` ({len(history_resp)} records)")
-                render_payments_table(history_resp)
+                payments_list = history_resp.get("payments", []) if isinstance(history_resp, dict) else (history_resp if isinstance(history_resp, list) else [])
+                st.markdown(f"#### 💳 Payment History for `{selected_cid}` ({len(payments_list)} transactions)")
+                render_payments_table(payments_list)
+
 
 
 if __name__ in ("__main__", "__mp_main__"):

@@ -33,7 +33,11 @@ def render_analytics_page() -> None:
 
     if o_err or not overview:
         st.error(f"Failed to load analytics: {o_err}")
+        if st.button("🔄 Retry Connection", key="analytics_retry_btn"):
+            st.cache_data.clear()
+            st.rerun()
         return
+
 
     # 2. Executive Analytics Metrics
     total_val = float(overview.get("failed_payment_value", 0.0) or 0.0)

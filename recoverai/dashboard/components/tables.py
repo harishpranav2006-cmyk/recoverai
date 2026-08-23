@@ -61,26 +61,40 @@ def render_recovery_queue_table(queue: List[Dict[str, Any]], on_select_callback:
     )
 
 
-def render_payments_table(payments: List[Dict[str, Any]], total: int = 0) -> None:
+def render_payments_table(payments: Any, total: int = 0) -> None:
     """Renders payments table with clean columns and search."""
-    if not payments:
+    if isinstance(payments, dict):
+        items = payments.get("payments", payments.get("items", []))
+    elif isinstance(payments, list):
+        items = payments
+    else:
+        items = []
+
+    if not items:
         st.info("No payment records found matching your filters.")
         return
 
     rows = []
-    for p in payments:
+    for p in items:
+        if not isinstance(p, dict):
+            continue
         is_recovered = bool(p.get("recovered_after_failure"))
         is_failed = not p.get("payment_success", True)
         status = "✅ Recovered" if is_recovered else ("❌ Failed" if is_failed else "✓ Succeeded")
+        pid = str(p.get("payment_id") or p.get("id", "N/A"))
         
         rows.append({
-            "Payment ID": str(p.get("id", "")),
+            "Payment ID": pid,
             "Amount (₹)": float(p.get("amount", 0.0) or 0.0),
             "Method": str(p.get("payment_method", "")).upper(),
             "Status": status,
             "Failure Reason": str(p.get("failure_reason", "None")).replace("_", " ").title(),
             "Timestamp": str(p.get("timestamp", ""))[:19],
         })
+
+    if not rows:
+        st.info("No payment records to display.")
+        return
 
     df = pd.DataFrame(rows)
 
@@ -95,6 +109,7 @@ def render_payments_table(payments: List[Dict[str, Any]], total: int = 0) -> Non
         use_container_width=True,
         hide_index=True,
     )
+
 
 
 def render_customers_table(customers: List[Dict[str, Any]], total: int = 0) -> None:
