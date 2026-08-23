@@ -7,10 +7,8 @@ clean, user-friendly KPI display that always renders correctly.
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional
 import streamlit as st
-
-from dashboard.config import COLORS
 
 
 def format_inr(val: Optional[float]) -> str:
@@ -29,6 +27,29 @@ def format_percent(val: Optional[float]) -> str:
     if val is None:
         return "0.0%"
     return f"{val * 100:.1f}%" if val <= 1.0 else f"{val:.1f}%"
+
+
+def render_kpi_card(
+    title: str,
+    value: str,
+    subtitle: Optional[str] = None,
+    badge: Optional[str] = None,
+    badge_bg: str = "#1E3A8A",
+    badge_color: str = "#93C5FD",
+    badge_border: str = "#2563EB",
+    icon: Optional[str] = None,
+    icon_bg: str = "#1F2937",
+    card_border: str = "#1F2937",
+    accent_color: Optional[str] = None,
+    **kwargs: Any,
+) -> None:
+    """Renders a single clean KPI metric card."""
+    label_text = f"{icon} {title}" if icon else title
+    st.metric(
+        label=label_text,
+        value=value,
+        delta=subtitle or badge,
+    )
 
 
 def render_overview_kpis(overview: dict) -> None:
