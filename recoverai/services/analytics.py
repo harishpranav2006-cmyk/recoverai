@@ -1,15 +1,15 @@
 """
-RecoverAI — Revenue Analytics & Recovery Metrics
-================================================
+RecoverAI — Revenue Analytics & Recovery Metrics (High-Performance SQL Aggregations)
+===================================================================================
 Calculates empirical revenue recovery performance, strategy efficiency,
-and failure-category breakdown from actual simulated records.
+and failure-category breakdown using ultra-fast database-level aggregations.
 """
 
 from __future__ import annotations
 
 import logging
 from typing import Any, Dict, List, Optional
-from sqlalchemy import func
+from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 
 from backend.database import SessionLocal
@@ -22,7 +22,8 @@ logger = logging.getLogger(__name__)
 
 def calculate_recovery_metrics(db: Optional[Session] = None) -> Dict[str, Any]:
     """
-    Computes overall revenue recovery aggregates across all failed payments.
+    Computes overall revenue recovery aggregates across all failed payments
+    using fast database-level aggregations (O(1) execution time).
     """
     own_session = False
     if db is None:
@@ -30,25 +31,42 @@ def calculate_recovery_metrics(db: Optional[Session] = None) -> Dict[str, Any]:
         own_session = True
 
     try:
-        # Total failed payments volume
-        failed_payments = db.query(Payment).filter(Payment.payment_success == False).all()
-        total_failed_count = len(failed_payments)
-        total_failed_value = sum(float(p.amount) for p in failed_payments)
+        # Total failed payments volume & count in a single query
+        failed_agg = db.query(
+            func.count(Payment.id).label("cnt"),
+            func.coalesce(func.sum(Payment.amount), 0.0).label("val"),
+        ).filter(Payment.payment_success == False).first()
 
-        # Recovered payments (where recovered_after_failure is True)
-        recovered_payments = [p for p in failed_payments if p.recovered_after_failure]
-        total_recovered_count = len(recovered_payments)
-        total_recovered_value = sum(float(p.recovered_amount or p.amount) for p in recovered_payments)
+        total_failed_count = failed_agg.cnt if failed_agg else 0
+        total_failed_value = float(failed_agg.val if failed_agg else 0.0)
+
+        # Recovered payments volume & count in a single query
+        recovered_agg = db.query(
+            func.count(Payment.id).label("cnt"),
+            func.coalesce(
+                func.sum(
+                    case(
+                        (Payment.recovered_amount.isnot(None), Payment.recovered_amount),
+                        else_=Payment.amount,
+                    )
+                ),
+                0.0,
+            ).label("val"),
+        ).filter(
+            Payment.payment_success == False,
+            Payment.recovered_after_failure == True,
+        ).first()
+
+        total_recovered_count = recovered_agg.cnt if recovered_agg else 0
+        total_recovered_value = float(recovered_agg.val if recovered_agg else 0.0)
 
         unrecovered_value = max(0.0, total_failed_value - total_recovered_value)
         recovery_rate = (total_recovered_value / total_failed_value) if total_failed_value > 0 else 0.0
 
-        # Total customers and payments
+        # Counts
         total_customers = db.query(func.count(Customer.id)).scalar() or 0
         total_payments = db.query(func.count(Payment.id)).scalar() or 0
         active_cases = db.query(func.count(RecoveryCase.id)).filter(RecoveryCase.status.in_(["pending", "in_progress"])).scalar() or 0
-
-        # Total retry attempts recorded
         total_retry_attempts = db.query(func.count(RetryAttempt.id)).scalar() or 0
 
         return {
@@ -72,7 +90,8 @@ def calculate_recovery_metrics(db: Optional[Session] = None) -> Dict[str, Any]:
 
 def calculate_recovery_by_strategy(db: Optional[Session] = None) -> List[Dict[str, Any]]:
     """
-    Computes recovered volume and success rate segmented by recovery strategy.
+    Computes recovered volume and success rate segmented by recovery strategy
+    using fast SQL GROUP BY.
     """
     own_session = False
     if db is None:
@@ -80,33 +99,28 @@ def calculate_recovery_by_strategy(db: Optional[Session] = None) -> List[Dict[st
         own_session = True
 
     try:
-        outcomes = db.query(RecoveryOutcome).all()
-        strategy_stats: Dict[str, Dict[str, Any]] = {}
-
-        for out in outcomes:
-            strat = out.strategy_used or "UNKNOWN"
-            if strat not in strategy_stats:
-                strategy_stats[strat] = {
-                    "strategy": strat,
-                    "total_cases": 0,
-                    "successful_recoveries": 0,
-                    "recovered_value": 0.0,
-                }
-            strategy_stats[strat]["total_cases"] += 1
-            if out.success:
-                strategy_stats[strat]["successful_recoveries"] += 1
-                strategy_stats[strat]["recovered_value"] += float(out.amount_recovered)
+        rows = db.query(
+            RecoveryOutcome.strategy_used,
+            func.count(RecoveryOutcome.id).label("total_cases"),
+            func.sum(case((RecoveryOutcome.success == True, 1), else_=0)).label("successful_recoveries"),
+            func.coalesce(
+                func.sum(case((RecoveryOutcome.success == True, RecoveryOutcome.amount_recovered), else_=0.0)),
+                0.0,
+            ).label("recovered_value"),
+        ).group_by(RecoveryOutcome.strategy_used).all()
 
         results = []
-        for strat, data in strategy_stats.items():
-            tot = data["total_cases"]
-            succ = data["successful_recoveries"]
+        for r in rows:
+            strat = r[0] or "UNKNOWN"
+            tot = r[1] or 0
+            succ = r[2] or 0
+            val = float(r[3] or 0.0)
             rate = (succ / tot) if tot > 0 else 0.0
             results.append({
                 "strategy": strat,
                 "total_cases": tot,
                 "successful_recoveries": succ,
-                "recovered_value": round(data["recovered_value"], 2),
+                "recovered_value": round(val, 2),
                 "success_rate": round(rate, 4),
                 "success_rate_percentage": f"{rate * 100:.1f}%",
             })
@@ -119,7 +133,7 @@ def calculate_recovery_by_strategy(db: Optional[Session] = None) -> List[Dict[st
 
 def calculate_recovery_by_failure_type(db: Optional[Session] = None) -> List[Dict[str, Any]]:
     """
-    Computes recovery rates grouped by initial failure reason.
+    Computes recovery rates grouped by initial failure reason using fast SQL GROUP BY.
     """
     own_session = False
     if db is None:
@@ -127,36 +141,36 @@ def calculate_recovery_by_failure_type(db: Optional[Session] = None) -> List[Dic
         own_session = True
 
     try:
-        failed_payments = db.query(Payment).filter(Payment.payment_success == False).all()
-        reason_stats: Dict[str, Dict[str, Any]] = {}
-
-        for p in failed_payments:
-            reason = p.failure_reason or "unknown"
-            if reason not in reason_stats:
-                reason_stats[reason] = {
-                    "failure_reason": reason,
-                    "total_failed": 0,
-                    "recovered_count": 0,
-                    "total_amount": 0.0,
-                    "recovered_amount": 0.0,
-                }
-            reason_stats[reason]["total_failed"] += 1
-            reason_stats[reason]["total_amount"] += float(p.amount)
-            if p.recovered_after_failure:
-                reason_stats[reason]["recovered_count"] += 1
-                reason_stats[reason]["recovered_amount"] += float(p.recovered_amount or p.amount)
+        rows = db.query(
+            Payment.failure_reason,
+            func.count(Payment.id).label("total_failed"),
+            func.sum(case((Payment.recovered_after_failure == True, 1), else_=0)).label("recovered_count"),
+            func.coalesce(func.sum(Payment.amount), 0.0).label("total_amount"),
+            func.coalesce(
+                func.sum(
+                    case(
+                        (Payment.recovered_after_failure == True, func.coalesce(Payment.recovered_amount, Payment.amount)),
+                        else_=0.0,
+                    )
+                ),
+                0.0,
+            ).label("recovered_amount"),
+        ).filter(Payment.payment_success == False).group_by(Payment.failure_reason).all()
 
         results = []
-        for reason, data in reason_stats.items():
-            tot = data["total_failed"]
-            rec = data["recovered_count"]
+        for r in rows:
+            reason = r[0] or "unknown"
+            tot = r[1] or 0
+            rec = r[2] or 0
+            tot_amt = float(r[3] or 0.0)
+            rec_amt = float(r[4] or 0.0)
             rate = (rec / tot) if tot > 0 else 0.0
             results.append({
                 "failure_reason": reason,
                 "total_failed": tot,
                 "recovered_count": rec,
-                "total_amount": round(data["total_amount"], 2),
-                "recovered_amount": round(data["recovered_amount"], 2),
+                "total_amount": round(tot_amt, 2),
+                "recovered_amount": round(rec_amt, 2),
                 "recovery_rate": round(rate, 4),
                 "recovery_rate_percentage": f"{rate * 100:.1f}%",
             })
@@ -172,7 +186,7 @@ calculate_recovery_by_failure_reason = calculate_recovery_by_failure_type
 
 def calculate_recovery_by_segment(db: Optional[Session] = None) -> List[Dict[str, Any]]:
     """
-    Computes recovery metrics grouped by customer segment.
+    Computes recovery metrics grouped by customer segment using SQL JOIN + GROUP BY.
     """
     own_session = False
     if db is None:
@@ -180,34 +194,35 @@ def calculate_recovery_by_segment(db: Optional[Session] = None) -> List[Dict[str
         own_session = True
 
     try:
-        customers = {c.id: c.segment for c in db.query(Customer).all()}
-        failed_payments = db.query(Payment).filter(Payment.payment_success == False).all()
-
-        segment_stats: Dict[str, Dict[str, Any]] = {}
-        for p in failed_payments:
-            seg = customers.get(p.customer_id, "unknown")
-            if seg not in segment_stats:
-                segment_stats[seg] = {
-                    "segment": seg,
-                    "total_failed_payments": 0,
-                    "total_failed_value": 0.0,
-                    "recovered_value": 0.0,
-                }
-            segment_stats[seg]["total_failed_payments"] += 1
-            segment_stats[seg]["total_failed_value"] += float(p.amount)
-            if p.recovered_after_failure:
-                segment_stats[seg]["recovered_value"] += float(p.recovered_amount or p.amount)
+        rows = db.query(
+            Customer.segment,
+            func.count(Payment.id).label("total_failed_payments"),
+            func.coalesce(func.sum(Payment.amount), 0.0).label("total_failed_value"),
+            func.coalesce(
+                func.sum(
+                    case(
+                        (Payment.recovered_after_failure == True, func.coalesce(Payment.recovered_amount, Payment.amount)),
+                        else_=0.0,
+                    )
+                ),
+                0.0,
+            ).label("recovered_value"),
+        ).join(Customer, Payment.customer_id == Customer.id).filter(
+            Payment.payment_success == False
+        ).group_by(Customer.segment).all()
 
         output = []
-        for seg, data in segment_stats.items():
-            tot = data["total_failed_value"]
-            rec = data["recovered_value"]
-            rate = (rec / tot) if tot > 0 else 0.0
+        for r in rows:
+            seg = r[0] or "unknown"
+            tot_payments = r[1] or 0
+            tot_val = float(r[2] or 0.0)
+            rec_val = float(r[3] or 0.0)
+            rate = (rec_val / tot_val) if tot_val > 0 else 0.0
             output.append({
                 "segment": seg,
-                "total_failed_payments": data["total_failed_payments"],
-                "total_failed_value": round(tot, 2),
-                "recovered_value": round(rec, 2),
+                "total_failed_payments": tot_payments,
+                "total_failed_value": round(tot_val, 2),
+                "recovered_value": round(rec_val, 2),
                 "recovery_rate": round(rate, 4),
                 "recovery_rate_percentage": f"{rate * 100:.1f}%",
             })
