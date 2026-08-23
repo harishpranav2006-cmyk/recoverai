@@ -437,27 +437,13 @@ def main() -> None:
 
     # 1. Sidebar Navigation & Branding
     with st.sidebar:
-        # Premium Logo & Branding Header
-        logo_html = f'<img src="{logo_uri}" style="width: 40px; height: 40px; border-radius: 10px; box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);"/>' if logo_uri else '<span style="font-size: 1.8rem; filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.6));">⚡</span>'
+        logo_path = Path(__file__).parent / "logo.jpg"
+        if logo_path.exists():
+            st.image(str(logo_path), width=60)
         
-        st.markdown(
-            f"""
-            <div style="padding: 12px 0 18px 0; border-bottom: 1px solid {COLORS['border']}; margin-bottom: 16px;">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    {logo_html}
-                    <div>
-                        <div style="font-size: 1.35rem; font-weight: 900; color: #FFFFFF; letter-spacing: -0.5px; line-height: 1.2;">
-                            Recover<span style="background: linear-gradient(135deg, #3B82F6, #60A5FA); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">AI</span>
-                        </div>
-                        <div style="font-size: 0.7rem; color: {COLORS['text_dim']}; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;">
-                            {APP_SUBTITLE}
-                        </div>
-                    </div>
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        st.title("⚡ RecoverAI")
+        st.caption(f"{APP_SUBTITLE} • v{APP_VERSION}")
+        st.divider()
 
         current_idx = (
             PAGES.index(st.session_state.current_page)
@@ -472,15 +458,13 @@ def main() -> None:
             label_visibility="collapsed",
         )
 
-        # Update state when user clicks radio
         if nav_choice != st.session_state.current_page:
             st.session_state.current_page = nav_choice
             st.rerun()
 
-        st.markdown("<div style='margin-top: 16px;'></div>", unsafe_allow_html=True)
-        st.markdown("---")
+        st.divider()
 
-        # 2. Live API Health Probe with animated status indicators
+        # 2. Live API Health Probe
         t0 = time.perf_counter()
         health_data, h_err = api_client.get_health()
         latency = (time.perf_counter() - t0) * 1000
@@ -496,45 +480,16 @@ def main() -> None:
         db_ok = api_connected and (health_data.get("database") in ["connected", "healthy"])
         ml_ok = api_connected and (health_data.get("ml_model") in ["available", "loaded"])
 
-        pulse_anim = "animation: pulseGreen 2s ease-in-out infinite;" if api_connected else "animation: pulseRed 2s ease-in-out infinite;"
-        
-        st.markdown(
-            f"""
-            <div style="background: {COLORS['glass_bg_strong']}; border: 1px solid {COLORS['border']}; border-radius: 12px; padding: 16px; font-size: 0.8rem; color: #FFFFFF; box-shadow: 0 4px 16px rgba(0,0,0,0.5); backdrop-filter: blur(12px); animation: fadeInUp 0.5s ease-out both;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                    <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: #FFFFFF;">
-                        <span style="display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: {'#22C55E' if api_connected else '#EF4444'}; {pulse_anim}"></span>
-                        <span>{'All Systems Active' if api_connected else 'API Disconnected'}</span>
-                    </div>
-                    <span style="font-size: 0.7rem; color: {COLORS['text_dim']}; background: {COLORS['surface']}; padding: 2px 8px; border-radius: 6px; font-weight: 600;">{st.session_state.api_latency_ms}ms</span>
-                </div>
-                <div style="display: flex; flex-direction: column; gap: 6px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: {COLORS['bg_dark']}; border-radius: 8px; border: 1px solid {COLORS['border']};">
-                        <span style="color: {COLORS['text_secondary']}; font-size: 0.78rem;">✓ REST API</span>
-                        <span style="color: {'#4ADE80' if api_connected else '#F87171'}; font-weight: 700; font-size: 0.78rem;">{'Healthy' if api_connected else 'Offline'}</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: {COLORS['bg_dark']}; border-radius: 8px; border: 1px solid {COLORS['border']};">
-                        <span style="color: {COLORS['text_secondary']}; font-size: 0.78rem;">✓ ML Model</span>
-                        <span style="color: {'#4ADE80' if ml_ok else '#F87171'}; font-weight: 700; font-size: 0.78rem;">{'Loaded' if ml_ok else 'Unavailable'}</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: {COLORS['bg_dark']}; border-radius: 8px; border: 1px solid {COLORS['border']};">
-                        <span style="color: {COLORS['text_secondary']}; font-size: 0.78rem;">✓ SQLite DB</span>
-                        <span style="color: {'#4ADE80' if db_ok else '#F87171'}; font-weight: 700; font-size: 0.78rem;">{'50K Records' if db_ok else 'Disconnected'}</span>
-                    </div>
-                </div>
-            </div>
+        with st.container(border=True):
+            st.markdown(f"**System Status** (`{st.session_state.api_latency_ms}ms`)")
+            if api_connected:
+                st.success("🟢 All Systems Active")
+            else:
+                st.error("🔴 API Disconnected")
             
-            <div style="background: {COLORS['bg_dark']}; border: 1px solid {COLORS['border']}; border-radius: 10px; padding: 10px; margin-top: 12px; text-align: center; backdrop-filter: blur(8px);">
-                <div style="font-size: 0.72rem; font-weight: 700; margin-bottom: 2px;">
-                    <span style="background: linear-gradient(90deg, #38BDF8, #3B82F6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                        Synthetic Data • Simulated Sandbox
-                    </span>
-                </div>
-                <div style="font-size: 0.68rem; color: {COLORS['text_dim']};">Razorpay AI Buildathon • v{APP_VERSION}</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+            st.caption(f"• REST API: {'🟢 OK' if api_connected else '🔴 Down'}")
+            st.caption(f"• ML Model: {'🟢 Loaded' if ml_ok else '🔴 Unloaded'}")
+            st.caption(f"• Database: {'🟢 50K Records' if db_ok else '🔴 Down'}")
 
         if st.button("🔄 Refresh System Status", use_container_width=True):
             st.rerun()
@@ -556,25 +511,15 @@ def main() -> None:
     elif "⚙️ System" in current_page:
         render_system_page()
 
-    # 4. Footer with branding
-    st.markdown(
-        f"""
-        <div style="margin-top: 60px; padding: 20px 0; border-top: 1px solid {COLORS['border']}; text-align: center; animation: fadeIn 1s ease-out both;">
-            <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 6px;">
-                <span style="font-size: 0.85rem; font-weight: 700; color: {COLORS['text_secondary']};">
-                    Recover<span style="color: {COLORS['primary']};">AI</span>
-                </span>
-                <span style="color: {COLORS['text_dim']}; font-size: 0.7rem;">•</span>
-                <span style="font-size: 0.72rem; color: {COLORS['text_dim']};">v{APP_VERSION}</span>
-            </div>
-            <div style="font-size: 0.68rem; color: {COLORS['text_dim']};">
-                Built for Razorpay AI Buildathon • Autonomous Revenue Recovery • Synthetic Data Mode
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    # 4. Clean Footer
+    st.divider()
+    f_col1, f_col2 = st.columns([3, 1])
+    with f_col1:
+        st.caption(f"RecoverAI v{APP_VERSION} • Razorpay AI Buildathon • Autonomous Involuntary Churn Prevention")
+    with f_col2:
+        st.caption("🔒 Synthetic Data Mode")
 
 
 if __name__ == "__main__":
     main()
+
