@@ -1,6 +1,6 @@
 """
-RecoverAI — Prioritized Recovery Queue Page (Premium Glassmorphism Dark Theme)
-==============================================================================
+RecoverAI — Prioritized Recovery Queue Page (Clean & Operational)
+================================================================
 Operational workspace for triage, AI decision inspection, and simulated recovery workflow execution.
 """
 
@@ -19,26 +19,12 @@ from dashboard.components import (
     render_payment_summary_card,
     render_recovery_queue_table,
 )
-from dashboard.config import COLORS
 
 
 def render_recovery_queue_page() -> None:
     """Renders the prioritized recovery queue and interactive execution workstation."""
-    st.markdown(
-        f"""
-        <div style="margin-bottom: 24px; animation: fadeInUp 0.5s ease-out both;">
-            <h1 style="margin: 0; font-size: 2.2rem; font-weight: 900; letter-spacing: -0.5px;">
-                <span style="background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 50%, #EC4899 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-size: 200% 200%; animation: gradientShift 4s ease-in-out infinite;">
-                    🎯 Prioritized Recovery Queue
-                </span>
-            </h1>
-            <div style="color: {COLORS['text_dim']}; font-size: 0.92rem; font-weight: 500; margin-top: 6px;">
-                Actionable failed payments ranked by calibrated recovery likelihood, customer value, and retry safety.
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    st.title("🎯 Prioritized Recovery Queue")
+    st.caption("Actionable failed payments ranked by calibrated recovery likelihood, customer value, and retry safety.")
 
     # 1. Filters Sidebar / Expander
     with st.expander("🔍 **Queue Filters & Prioritization Settings**", expanded=True):
@@ -110,19 +96,10 @@ def render_recovery_queue_page() -> None:
     st.markdown(f"**Found {len(queue_items)} actionable payments requiring recovery policy evaluation:**")
     render_recovery_queue_table(queue_items)
 
-    st.markdown("---")
+    st.divider()
 
     # 3. Interactive Payment Inspection & Recovery Execution Workstation
-    st.markdown(
-        f"""
-        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px; animation: fadeInUp 0.5s ease-out both;">
-            <span style="font-size: 1.25rem;">⚡</span>
-            <span style="font-weight: 800; font-size: 1.25rem; color: #FFFFFF;">Payment Recovery Workstation & Action Suite</span>
-            <div style="flex: 1; height: 1px; background: linear-gradient(90deg, {COLORS['primary']}40, transparent); margin-left: 8px;"></div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    st.markdown("### ⚡ Payment Recovery Workstation & Action Suite")
 
     available_payment_ids = [
         item.get("payment_id") or item.get("id")
@@ -182,60 +159,44 @@ def render_recovery_queue_page() -> None:
         render_customer_outreach_panel(outreach_info)
 
     # 4. Action Suite Toolbar
-    st.markdown(
-        f"""
-        <div style="background: {COLORS['glass_bg_strong']}; border: 1px solid {COLORS['border']}; border-radius: 14px; padding: 20px; margin-top: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.5); backdrop-filter: blur(12px); position: relative; overflow: hidden; animation: fadeInUp 0.6s ease-out both;">
-            <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: {COLORS['gradient_purple']};"></div>
-            <div style="font-size: 1.15rem; font-weight: 800; color: #FFFFFF; margin-bottom: 6px;">
-                🚀 Autonomous Recovery Action Suite
-            </div>
-            <div style="font-size: 0.88rem; color: {COLORS['text_dim']}; margin-bottom: 14px;">
-                Execute focused operations or trigger full end-to-end recovery pipeline.
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    with st.container(border=True):
+        st.markdown("### 🚀 Autonomous Recovery Actions")
+        st.caption("Execute focused operations or trigger full end-to-end recovery pipeline.")
 
-    act1, act2, act3, act4 = st.columns(4)
-    with act1:
-        if st.button("🧠 Analyze Payment", use_container_width=True, key="btn_rq_analyze"):
-            with st.spinner(f"Analyzing {selected_payment_id} through Decision Engine..."):
-                res, err = api_client.analyze_recovery(selected_payment_id)
-            if err:
-                st.error(f"Analysis failed: {err}")
-            else:
-                st.success(f"✅ Evaluated: Tier={res.get('tier')} | Strategy={res.get('strategy')}")
-    with act2:
-        if st.button("🤖 Run AI Agent", use_container_width=True, key="btn_rq_agent"):
-            with st.spinner(f"Executing AI Recovery Agent for {selected_payment_id}..."):
-                res, err = api_client.run_agent(selected_payment_id, channel=channel_select)
-            if err:
-                st.error(f"Agent execution failed: {err}")
-            else:
-                st.success(f"✅ Agent completed: Decision={res.get('decision', {}).get('strategy')}")
-    with act3:
-        if st.button("⚡ Simulate Gateway", use_container_width=True, key="btn_rq_sim"):
-            with st.spinner(f"Simulating gateway retry for {selected_payment_id}..."):
-                res, err = api_client.simulate_payment(selected_payment_id, force_fresh=True)
-            if err:
-                st.error(f"Simulation failed: {err}")
-            else:
-                st.info(f"Gateway Response: {res.get('gateway_response_code')} | Outcome: {res.get('outcome_status')}")
-    with act4:
-        if st.button("👤 View Customer", use_container_width=True, key="btn_rq_view_cust"):
-            from dashboard.app import navigate_to
-            navigate_to("Customers", selected_customer_id=customer_data.get("id"))
+        act1, act2, act3, act4 = st.columns(4)
+        with act1:
+            if st.button("🧠 Analyze Payment", use_container_width=True, key="btn_rq_analyze"):
+                with st.spinner(f"Analyzing {selected_payment_id} through Decision Engine..."):
+                    res, err = api_client.analyze_recovery(selected_payment_id)
+                if err:
+                    st.error(f"Analysis failed: {err}")
+                else:
+                    st.success(f"✅ Evaluated: Tier={res.get('tier')} | Strategy={res.get('strategy')}")
+        with act2:
+            if st.button("🤖 Run AI Agent", use_container_width=True, key="btn_rq_agent"):
+                with st.spinner(f"Executing AI Recovery Agent for {selected_payment_id}..."):
+                    res, err = api_client.run_agent(selected_payment_id, channel=channel_select)
+                if err:
+                    st.error(f"Agent execution failed: {err}")
+                else:
+                    st.success(f"✅ Agent completed: Decision={res.get('decision', {}).get('strategy')}")
+        with act3:
+            if st.button("⚡ Simulate Gateway", use_container_width=True, key="btn_rq_sim"):
+                with st.spinner(f"Simulating gateway retry for {selected_payment_id}..."):
+                    res, err = api_client.simulate_payment(selected_payment_id, force_fresh=True)
+                if err:
+                    st.error(f"Simulation failed: {err}")
+                else:
+                    st.info(f"Gateway Response: {res.get('gateway_response_code')} | Outcome: {res.get('outcome_status')}")
+        with act4:
+            if st.button("👤 View Customer", use_container_width=True, key="btn_rq_view_cust"):
+                from dashboard.app import navigate_to
+                navigate_to("Customers", selected_customer_id=customer_data.get("id"))
 
-    # 5. High-Impact Workflow Execution with Confirmation
+    # 5. Full Workflow Execution
     with st.expander("🚀 **Execute Full Autonomous Recovery Workflow (with Confirmation)**", expanded=True):
         st.markdown(
-            f"""
-            <div style="font-size: 0.9rem; color: #E5E7EB; margin-bottom: 10px;">
-                Ready to execute full workflow for <b>{selected_payment_id}</b> (Amount: ₹{payment_data.get('amount', 0):,.2f}, Strategy: <b>{decision_data.get('strategy', 'SMART_RETRY')}</b>).
-            </div>
-            """,
-            unsafe_allow_html=True,
+            f"Ready to execute full workflow for **`{selected_payment_id}`** (Amount: ₹{payment_data.get('amount', 0):,.2f}, Strategy: **{decision_data.get('strategy', 'SMART_RETRY')}**)."
         )
 
         wf_c1, wf_c2, wf_c3 = st.columns([2, 1, 1])
@@ -262,30 +223,20 @@ def render_recovery_queue_page() -> None:
                 outcome_status = sim_outcome.get("outcome_status", "UNKNOWN")
                 is_success = outcome_status == "RECOVERED"
 
-                badge_color = "#22C55E" if is_success else ("#F59E0B" if outcome_status == "WAITING_FOR_CUSTOMER" else "#EF4444")
-
-                st.markdown(
-                    f"""
-                    <div style="background: {badge_color}18; border: 2px solid {badge_color}; border-radius: 10px; padding: 20px 24px; margin-top: 14px; box-shadow: 0 0 20px {badge_color}30;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                            <span style="font-size: 1.25rem; font-weight: 800; color: {badge_color};">
-                                {'✅ SIMULATED RECOVERY SUCCEEDED' if is_success else f'⚠️ SIMULATION RESULT: {outcome_status}'}
-                            </span>
-                            <span style="background: {badge_color}; color: #000000; padding: 4px 12px; border-radius: 9999px; font-weight: 800; font-size: 0.78rem;">SIMULATED</span>
-                        </div>
-                        <div style="font-size: 0.92rem; color: #FFFFFF; line-height: 1.5;">
-                            <b>Gateway Response:</b> <code>{sim_outcome.get('gateway_response_code', 'N/A')}</code> &nbsp;|&nbsp;
-                            <b>Recovered Amount:</b> <b style="color: #4ADE80;">₹{sim_outcome.get('recovered_amount', 0.0):,.2f}</b> &nbsp;|&nbsp;
-                            <b>Payment Status:</b> <b style="color: #60A5FA;">{workflow_res.get('payment_state', 'N/A')}</b> &nbsp;|&nbsp;
-                            <b>Total Attempts:</b> <b>{sim_outcome.get('attempt_number', 1)}</b>
-                        </div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
+                if is_success:
+                    st.success(
+                        f"🎉 **SIMULATED RECOVERY SUCCEEDED** | Gateway Response: `{sim_outcome.get('gateway_response_code', 'N/A')}` | "
+                        f"Recovered Amount: **₹{sim_outcome.get('recovered_amount', 0.0):,.2f}** | "
+                        f"Payment Status: **{workflow_res.get('payment_state', 'N/A')}** (Attempts: {sim_outcome.get('attempt_number', 1)})"
+                    )
+                else:
+                    st.warning(
+                        f"⚠️ **SIMULATION RESULT: {outcome_status}** | Gateway Response: `{sim_outcome.get('gateway_response_code', 'N/A')}` | "
+                        f"Payment Status: **{workflow_res.get('payment_state', 'N/A')}**"
+                    )
 
     # 6. Chronological Event Timeline
-    st.markdown("---")
+    st.divider()
     with st.spinner("Loading payment event timeline..."):
         timeline_data, _ = api_client.get_payment_timeline(selected_payment_id)
         if timeline_data and "events" in timeline_data:
