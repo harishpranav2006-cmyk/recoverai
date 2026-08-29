@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Literal
 
@@ -22,13 +23,13 @@ class Settings(BaseSettings):
     # --- Application & API ---
     app_version: str = "1.0.0"
     api_prefix: str = "/api/v1"
-    cors_allowed_origins: str = "http://localhost:8501,http://localhost:3000,http://localhost:8000,*"
+    cors_allowed_origins: str = "http://localhost:8501,http://127.0.0.1:8501,http://localhost:3000,http://localhost:8000,https://share.streamlit.io,*"
     default_page_size: int = 25
     max_page_size: int = 100
     max_batch_size: int = 50
     demo_mode: bool = True
-    app_host: str = "0.0.0.0"
-    app_port: int = 8000
+    app_host: str = Field(default_factory=lambda: os.getenv("HOST", os.getenv("APP_HOST", "0.0.0.0")))
+    app_port: int = Field(default_factory=lambda: int(os.getenv("PORT", os.getenv("APP_PORT", "8000"))))
     log_level: str = "INFO"
 
     # --- ML ---

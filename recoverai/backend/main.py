@@ -7,6 +7,8 @@ payment simulation, revenue analytics, customer profiles, and health checks.
 
 from __future__ import annotations
 
+import logging
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -16,6 +18,22 @@ from backend.api.v1 import api_v1_router
 from backend.config import settings
 from backend.errors import register_error_handlers
 from backend.middleware import RequestIdMiddleware
+
+logger = logging.getLogger("recoverai.backend")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application startup and shutdown lifecycle management."""
+    logger.info("Starting RecoverAI backend application...")
+    try:
+        from backend.init_db import initialize_database
+        initialize_database()
+    except Exception as exc:
+        logger.error("Database auto-initialization error on startup: %s", exc, exc_info=True)
+    yield
+    logger.info("RecoverAI application shutting down.")
+
 
 tags_metadata = [
     {"name": "Health & Status", "description": "System health, liveness, and readiness probes."},
@@ -47,6 +65,7 @@ Autonomous AI-powered revenue recovery platform designed for high-velocity subsc
     """,
     version=settings.app_version,
     openapi_tags=tags_metadata,
+    lifespan=lifespan,
 )
 
 # 1. Register Request ID & Performance Logging Middleware
@@ -57,6 +76,7 @@ allowed_origins = [orig.strip() for orig in settings.cors_allowed_origins.split(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins if allowed_origins else ["*"],
+    allow_origin_regex=r"https://.*\.streamlit\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

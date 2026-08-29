@@ -1,0 +1,156 @@
+{
+  "model_comparison": {
+    "logistic_regression": {
+      "model_name": "Logistic Regression (Baseline)",
+      "accuracy": 0.5962,
+      "precision": 0.681,
+      "recall": 0.5928,
+      "f1_score": 0.6339,
+      "roc_auc": 0.6252,
+      "pr_auc": 0.6991,
+      "brier_score": 0.2382,
+      "log_loss": 0.6691,
+      "confusion_matrix": [
+        [
+          491,
+          326
+        ],
+        [
+          478,
+          696
+        ]
+      ]
+    },
+    "random_forest": {
+      "model_name": "Random Forest",
+      "accuracy": 0.6007,
+      "precision": 0.674,
+      "recall": 0.6252,
+      "f1_score": 0.6487,
+      "roc_auc": 0.6245,
+      "pr_auc": 0.6971,
+      "brier_score": 0.2375,
+      "log_loss": 0.6677,
+      "confusion_matrix": [
+        [
+          462,
+          355
+        ],
+        [
+          440,
+          734
+        ]
+      ]
+    },
+    "xgboost": {
+      "model_name": "XGBoost Classifier",
+      "accuracy": 0.5856,
+      "precision": 0.6614,
+      "recall": 0.609,
+      "f1_score": 0.6341,
+      "roc_auc": 0.6136,
+      "pr_auc": 0.69,
+      "brier_score": 0.2406,
+      "log_loss": 0.6747,
+      "confusion_matrix": [
+        [
+          451,
+          366
+        ],
+        [
+          459,
+          715
+        ]
+      ]
+    }
+  },
+  "selected_model": "logistic_regression",
+  "final_metrics": {
+    "model_name": "Logistic Regression (Baseline) (Calibrated)",
+    "accuracy": 0.6062,
+    "precision": 0.6252,
+    "recall": 0.8296,
+    "f1_score": 0.713,
+    "roc_auc": 0.6252,
+    "pr_auc": 0.6991,
+    "brier_score": 0.2309,
+    "log_loss": 0.6534,
+    "confusion_matrix": [
+      [
+        233,
+        584
+      ],
+      [
+        200,
+        974
+      ]
+    ]
+  },
+  "global_feature_importance": [
+    {
+      "feature": "prev_success_ratio",
+      "mean_abs_shap": 0.2033
+    },
+    {
+      "feature": "failure_temporary",
+      "mean_abs_shap": 0.1675
+    },
+    {
+      "feature": "failure_category_technical_issue",
+      "mean_abs_shap": 0.1307
+    },
+    {
+      "feature": "retry_count",
+      "mean_abs_shap": 0.0896
+    },
+    {
+      "feature": "failure_category_card_issue",
+      "mean_abs_shap": 0.0769
+    },
+    {
+      "feature": "previous_retry_count",
+      "mean_abs_shap": 0.0472
+    },
+    {
+      "feature": "is_first_failure",
+      "mean_abs_shap": 0.0437
+    },
+    {
+      "feature": "customer_lifetime_value",
+      "mean_abs_shap": 0.0405
+    },
+    {
+      "feature": "failure_reason_network_failure",
+      "mean_abs_shap": 0.0404
+    },
+    {
+      "feature": "subscription_type_enterprise",
+      "mean_abs_shap": 0.0375
+    },
+    {
+      "feature": "failure_category_payment_issue",
+      "mean_abs_shap": 0.0363
+    },
+    {
+      "feature": "payment_method_net_banking",
+      "mean_abs_shap": 0.0341
+    },
+    {
+      "feature": "is_high_clv",
+      "mean_abs_shap": 0.033
+    },
+    {
+      "feature": "failure_reason_invalid_payment_details",
+      "mean_abs_shap": 0.0325
+    },
+    {
+      "feature": "previous_failed_payments",
+      "mean_abs_shap": 0.0317
+    }
+  ],
+  "temporal_validation": {
+    "accuracy": 0.6177,
+    "roc_auc": 0.6163,
+    "f1_score": 0.7252
+  }
+}

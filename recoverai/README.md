@@ -4,7 +4,7 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-green.svg)](https://fastapi.tiangolo.com)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.29%2B-red.svg)](https://streamlit.io)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://docker.com)
-[![Tests](https://img.shields.io/badge/Tests-199%20Passing-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-235%20Passing-brightgreen.svg)]()
 [![Coverage](https://img.shields.io/badge/Coverage-84%25-brightgreen.svg)]()
 [![Status](https://img.shields.io/badge/Status-Buildathon%20Submission%20Ready-brightgreen.svg)]()
 
@@ -261,7 +261,57 @@ RecoverAI includes 7 pre-configured, deterministic benchmark scenarios accessibl
 
 ## 🚀 Quickstart & Deployment
 
-### Option A: Multi-Service Docker Compose (Recommended)
+### Option A: Cloud Deployment (Render + Streamlit Community Cloud)
+
+```
+                USER
+                  │
+                  ▼
+        Streamlit Cloud Dashboard
+                  │
+                  │ HTTPS / JSON
+                  ▼
+             Render API
+             FastAPI
+                  │
+        ┌─────────┴─────────┐
+        │         │         │
+        ▼         ▼         ▼
+       ML     Decision   Recovery
+      Model     Engine    Workflow
+        │         │         │
+        └─────────┬─────────┘
+                  │
+                  ▼
+              SQLite DB
+```
+
+#### 1. Backend REST API on Render
+Deploy the FastAPI backend as a Python Web Service using `render.yaml` or Render Dashboard:
+- **Build Command**: `pip install -r requirements.txt`
+- **Start Command**: `python -m uvicorn backend.main:app --host 0.0.0.0 --port $PORT`
+- **Health Check Path**: `/api/v1/health/live`
+- **Environment Variables**:
+  - `APP_ENV=production`
+  - `DEMO_MODE=true`
+  - `SIMULATION_MODE=true`
+  - `LLM_PROVIDER=mock`
+  - `DATABASE_URL=sqlite:///./recoverai.db`
+  - `CORS_ALLOWED_ORIGINS=https://share.streamlit.io,https://*.streamlit.app,http://localhost:8501`
+
+#### 2. Frontend Dashboard on Streamlit Community Cloud
+Deploy `dashboard/app.py` via [share.streamlit.io](https://share.streamlit.io):
+- **Repository**: `harishpranav2006-cmyk/recoverai`
+- **Main file path**: `dashboard/app.py`
+- **App Settings → Secrets**:
+  ```toml
+  RECOVERAI_API_URL = "https://<your-render-service>.onrender.com/api/v1"
+  API_TIMEOUT_SECONDS = 20
+  ```
+
+---
+
+### Option B: Multi-Service Docker Compose
 ```bash
 # 1. Build and start all services
 docker compose up --build
@@ -271,12 +321,12 @@ docker compose up --build
 # API Docs:  http://localhost:8000/docs
 ```
 
-### Option B: Local Python Development
+### Option C: Local Python Development
 ```bash
 # 1. Install dependencies
 pip install -r requirements.txt
 
-# 2. Initialize environment and database
+# 2. Initialize environment and database (automatic schema & seeding)
 python scripts/setup_demo.py
 
 # 3. Terminal 1: Start Backend REST API
@@ -286,7 +336,7 @@ uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 streamlit run dashboard/app.py
 ```
 
-### Option C: Standalone Terminal Demo Runner
+### Option D: Standalone Terminal Demo Runner
 ```bash
 python scripts/run_demo.py
 ```
@@ -298,7 +348,7 @@ python scripts/run_demo.py
 RecoverAI features a complete, 100% green test suite:
 
 ```bash
-# Run all 199 automated unit, integration, and E2E tests
+# Run all 235 automated unit, integration, and E2E tests
 python -m pytest tests/ -v
 
 # Run database consistency audit (50k payments, 5k customers)
@@ -311,7 +361,7 @@ python scripts/security_audit.py
 python scripts/benchmark_performance.py
 ```
 
-**Test Suite Summary:** **199 / 199 tests passing (100% pass rate in ~18.5s, 84% statement coverage)**.
+**Test Suite Summary:** **235 / 235 tests passing (100% pass rate, 84% statement coverage)**.
 
 ---
 

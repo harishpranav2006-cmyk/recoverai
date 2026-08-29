@@ -1,156 +1,222 @@
-# RecoverAI — Deployment, Containerization & Operation Guide
+# RecoverAI — Complete Deployment, Cloud Operations & Containerization Guide
 
-## 1. Overview
-
-RecoverAI is packaged for multi-modal execution:
-1. **Local Python Execution**: High-velocity development mode using `uvicorn` and `streamlit`.
-2. **Multi-Service Docker Compose**: Containerized multi-service deployment orchestrating FastAPI (`recoverai_backend`) and Streamlit (`recoverai_frontend`) with health checks, persistent volumes, and isolated networking.
-
-```
-                            DOCKER COMPOSE DEPLOYMENT ARCHITECTURE
-                            
-                 ┌─────────────────────────────────────────────────────────┐
-                 │                   Host Machine / VM                     │
-                 │                                                         │
-                 │   Port 8501                     Port 8000               │
-                 │       │                             │                   │
-                 │       ▼                             ▼                   │
-                 │ ┌──────────────┐              ┌──────────────┐          │
-                 │ │  Streamlit   │              │   FastAPI    │          │
-                 │ │  (Frontend)  │───HTTP/v1───►│  (Backend)   │          │
-                 │ └──────────────┘              └──────┬───────┘          │
-                 │   recoverai_net                      │                  │
-                 │                                      │ Mounts           │
-                 │                                      ▼                  │
-                 │                             ┌─────────────────┐         │
-                 │                             │  recoverai.db   │ (Vol)   │
-                 │                             │  ml/artifacts/  │ (ro)    │
-                 │                             └─────────────────┘         │
-                 └─────────────────────────────────────────────────────────┘
-```
+This document provides complete, step-by-step instructions for deploying and running RecoverAI in both local development environments and cloud production platforms (Render + Streamlit Community Cloud).
 
 ---
 
-## 2. Quickstart with Docker Compose
+## 1. Cloud Deployment Architecture
 
-### Prerequisites
-- Docker Engine 20.10+ and Docker Compose v2+
-- Port `8000` (FastAPI REST API) and Port `8501` (Streamlit Dashboard) available.
-
-### Step 1: Clone & Navigate
-```bash
-git clone <repository_url>
-cd recoverai
+```
+                USER (Judge / Evaluator)
+                           │
+                           ▼
+        Streamlit Community Cloud (Frontend)
+          (dashboard/app.py • 7 Interactive Pages)
+                           │
+                           │ HTTPS / REST (JSON)
+                           ▼
+              Render Web Service (Backend)
+         (FastAPI / Uvicorn • Dynamic $PORT • 0.0.0.0)
+                           │
+        ┌──────────────────┼──────────────────┐
+        │                  │                  │
+        ▼                  ▼                  ▼
+    ML Inference    Decision Engine    Payment Simulator
+(Calibrated Logistic  (14-Step Safe     (Realistic Gateway
+  Regression + SHAP)    Policy Matrix)      Physics Sandbox)
+        │                  │                  │
+        └──────────────────┼──────────────────┘
+                           │
+                           ▼
+             SQLite Prototype Database
+       (recoverai.db • Auto-Initialized & Seeded)
 ```
 
-### Step 2: Environment Configuration
-Copy the provided `.env.example` template:
+### Distinction Between Real vs. Simulated Systems:
+
+| Subsystem | Execution Nature | Description |
+| :--- | :--- | :--- |
+| **REST API (`/api/v1`)** | **REAL** | True FastAPI HTTP service handling authentication, routing, validation, error envelopes, and latency logging. |
+| **ML Inference** | **REAL** | True Scikit-Learn Calibrated Logistic Regression scoring 24 zero-leakage payment features. |
+| **SHAP Explainability** | **REAL** | True mathematical Tree/Linear SHAP computing additive feature contributions per prediction. |
+| **Decision Engine** | **REAL** | True 14-step deterministic policy matrix classifying payments into 3 risk tiers with hard safety blocks. |
+| **Revenue Analytics** | **REAL** | Dynamic SQL aggregations calculating recovered volume, conversion rates, and time-series trends. |
+| **Fintech Dashboard** | **REAL** | Multi-page Streamlit application with live API polling, interactive charts, and user controls. |
+| **Gateway Execution** | *SIMULATED* | Realistic sandbox physics modeling issuer decline codes, network timeouts, and retry fatigue without processing real currency. |
+| **Customer Outreach** | *SIMULATED* | Privacy-safe, templated WhatsApp/SMS/Email notifications generated and recorded in audit logs without dispatching real communications. |
+
+---
+
+## 2. Step-by-Step Cloud Deployment
+
+### Step A: Push Code to GitHub
+Ensure the latest codebase, including trained ML artifacts in `ml/artifacts/` and deployment configuration, is pushed to your GitHub repository:
 ```bash
-cp .env.example .env
+git add .
+git commit -m "feat: prepare RecoverAI for cloud deployment"
+git push origin main
+```
+Repository: `https://github.com/harishpranav2006-cmyk/recoverai.git`
+
+---
+
+### Step B: Deploy FastAPI Backend on Render
+
+1. Log in to [Render Dashboard](https://dashboard.render.com).
+2. Click **New +** → **Web Service** (or use **Blueprint** pointing to `render.yaml`).
+3. Connect your GitHub repository: `harishpranav2006-cmyk/recoverai`.
+4. Configure service settings:
+   - **Name**: `recoverai-api`
+   - **Region**: Oregon (or nearest available)
+   - **Branch**: `main`
+   - **Runtime**: `Python 3`
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `python -m uvicorn backend.main:app --host 0.0.0.0 --port $PORT`
+   - **Plan Type**: `Free`
+5. Configure Environment Variables:
+   - `APP_ENV`: `production`
+   - `DEMO_MODE`: `true`
+   - `SIMULATION_MODE`: `true`
+   - `LLM_PROVIDER`: `mock`
+   - `DATABASE_URL`: `sqlite:///./recoverai.db`
+   - `CORS_ALLOWED_ORIGINS`: `https://share.streamlit.io,https://*.streamlit.app,http://localhost:8501`
+   - `PYTHON_VERSION`: `3.11.9`
+6. Click **Create Web Service**.
+7. Once deployed, copy your public service URL (e.g., `https://recoverai-api.onrender.com`).
+
+---
+
+### Step C: Deploy Streamlit Dashboard on Streamlit Community Cloud
+
+1. Log in to [Streamlit Community Cloud](https://share.streamlit.io).
+2. Click **New app**.
+3. Select your repository: `harishpranav2006-cmyk/recoverai`.
+4. Set **Branch** to `main`.
+5. Set **Main file path** to `dashboard/app.py`.
+6. Click **Advanced settings...** → **Secrets**.
+7. Paste your Render backend URL into the secrets configuration:
+   ```toml
+   RECOVERAI_API_URL = "https://recoverai-api.onrender.com/api/v1"
+   API_TIMEOUT_SECONDS = 25
+   ```
+8. Click **Save**, then click **Deploy!**.
+
+---
+
+## 3. Verification & Live Health Probes
+
+### Verifying the Render Backend
+Execute following health checks against your public Render URL:
+
+```bash
+# 1. Root Welcome & Metadata
+curl -s https://<your-render-url>.onrender.com/
+
+# 2. Comprehensive Health Probe (DB + ML Status)
+curl -s https://<your-render-url>.onrender.com/api/v1/health
+
+# 3. Liveness Probe (Kubernetes/Container)
+curl -s https://<your-render-url>.onrender.com/api/v1/health/live
+
+# 4. Readiness Probe (Critical Dependencies)
+curl -s https://<your-render-url>.onrender.com/api/v1/health/ready
+
+# 5. Interactive OpenAPI Documentation
+# Open in browser: https://<your-render-url>.onrender.com/docs
 ```
 
-### Step 3: Build & Start Multi-Service Containers
+Expected output for `/api/v1/health`:
+```json
+{
+  "status": "healthy",
+  "database": "connected",
+  "ml_model": "available",
+  "llm_mode": "mock",
+  "simulator": "available",
+  "version": "1.0.0"
+}
+```
+
+### Verifying the Streamlit Dashboard
+1. Open your Streamlit Cloud URL (e.g., `https://recoverai.streamlit.app`).
+2. Verify the **Sidebar System Status** card displays:
+   - `🟢 REST API: OK`
+   - `🟢 ML Model: Loaded`
+   - `🟢 Database: 50K Records`
+3. Navigate to **⚙️ System Diagnostics**:
+   - Verify all 5 subsystems (Frontend, Backend API, Database, ML Model, Simulator) display `🟢 READY` / `🟢 HEALTHY`.
+   - Click the **Open Swagger UI** button to confirm it opens the live documentation on Render.
+
+---
+
+## 4. Local Execution Options
+
+### Option A: Multi-Service Docker Compose
 ```bash
+# Build and start all services (FastAPI on 8000, Streamlit on 8501)
 docker compose up --build
-```
-*To run in detached background mode:*
-```bash
+
+# Run in background (detached)
 docker compose up -d
+
+# Stop containers
+docker compose down
 ```
 
-### Step 4: Access Services
-- **Streamlit Fintech Dashboard**: [http://localhost:8501](http://localhost:8501)
-- **FastAPI Interactive Docs (Swagger)**: [http://localhost:8000/docs](http://localhost:8000/docs)
-- **FastAPI Alternative Docs (ReDoc)**: [http://localhost:8000/redoc](http://localhost:8000/redoc)
-- **Liveness Health Probe**: [http://localhost:8000/api/v1/health/live](http://localhost:8000/api/v1/health/live)
-
----
-
-## 3. Local Development Startup (Without Docker)
-
-### Step 1: Install Python Dependencies
+### Option B: Local Python Startup
 ```bash
+# 1. Install dependencies
 pip install -r requirements.txt
-```
 
-### Step 2: Initialize Database & Verify Environment
-```bash
+# 2. Run one-time environment verification and schema setup
 python scripts/setup_demo.py
-```
 
-### Step 3: Start Backend API (Terminal 1)
-```bash
-uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
-```
+# 3. Start Backend REST API (Terminal 1)
+python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 
-### Step 4: Start Streamlit Dashboard (Terminal 2)
-```bash
+# 4. Start Streamlit Dashboard (Terminal 2)
 streamlit run dashboard/app.py
 ```
 
 ---
 
-## 4. Environment Variables Reference
+## 5. Environment Variables & Secrets Reference
 
-| Variable | Default Value | Description |
-| :--- | :--- | :--- |
-| `APP_ENV` | `production` | Execution environment (`development`, `production`). |
-| `DATABASE_URL` | `sqlite:///./recoverai.db` | Database connection string (SQLite or PostgreSQL). |
-| `HOST` | `0.0.0.0` | Server bind host. |
-| `PORT` | `8000` | FastAPI server port. |
-| `API_BASE_URL` | `http://localhost:8000/api/v1` | Backend URL consumed by Streamlit (use `http://backend:8000/api/v1` in Docker). |
-| `SIMULATION_MODE` | `true` | Enforces simulation sandbox rules (no real payments or messages). |
-| `LLM_PROVIDER` | `mock` | AI reasoning provider (`mock` for 100% deterministic offline execution, or `openai`). |
-| `CORS_ALLOWED_ORIGINS` | `http://localhost:8501,...` | Comma-separated list of allowed browser origins. |
-| `LOG_LEVEL` | `INFO` | Application log verbosity (`DEBUG`, `INFO`, `WARNING`, `ERROR`). |
-| `MODEL_PATH` | `ml/artifacts/model.joblib` | Path to production Calibrated Logistic Regression model. |
-| `PREPROCESSOR_PATH` | `ml/artifacts/preprocessor.joblib` | Path to Scikit-Learn feature preprocessor. |
-| `SHAP_PATH` | `ml/artifacts/shap_explainer.joblib` | Path to SHAP explainer artifact. |
+| Variable | Scope | Default Value | Description |
+| :--- | :--- | :--- | :--- |
+| `APP_ENV` | Backend | `production` | Deployment environment identifier. |
+| `PORT` | Backend | `8000` | Bind port injected by Render / container host. |
+| `HOST` | Backend | `0.0.0.0` | Bind host IP for server listening. |
+| `DATABASE_URL` | Backend | `sqlite:///./recoverai.db` | SQLAlchemy connection string. |
+| `CORS_ALLOWED_ORIGINS` | Backend | `http://localhost:8501,...` | Permitted origins. Regex automatically allows `https://*.streamlit.app`. |
+| `SIMULATION_MODE` | Backend | `true` | Enforces simulation sandbox safety constraints. |
+| `LLM_PROVIDER` | Backend | `mock` | `mock` (deterministic offline) or `openai`. |
+| `RECOVERAI_API_URL` | Frontend | `http://localhost:8000/api/v1` | URL consumed by Streamlit (configured in Streamlit Secrets). |
+| `API_TIMEOUT_SECONDS` | Frontend | `15` | Network request timeout in seconds. |
 
 ---
 
-## 5. Persistent Storage & ML Artifacts
+## 6. Troubleshooting & Common Issues
 
-1. **Database Volume (`recoverai.db`)**:
-   - In `docker-compose.yml`, `./recoverai.db` is mounted directly into `/app/recoverai.db`.
-   - Data persists across container restarts, stops, and rebuilds.
-2. **ML Artifacts Mount (`ml/artifacts`)**:
-   - Mounted as read-only (`:ro`) into `/app/ml/artifacts`.
-   - The calibrated ML model, feature preprocessor, and SHAP explainer are loaded into memory on startup without requiring retraining.
+### 1. "RecoverAI API is currently unavailable" on Streamlit Cloud
+- **Cause**: Render free tier services spin down after 15 minutes of inactivity.
+- **Solution**: The first request wakes the service, taking 30–50 seconds. Click **🔄 Refresh System Status** or **🔄 Retry Connection** in the dashboard once the backend has finished booting.
+- **Check**: Open your Render backend URL directly in your browser at `/api/v1/health`.
+
+### 2. Streamlit Cloud Cannot Reach Backend (CORS / Network Error)
+- Ensure `RECOVERAI_API_URL` in Streamlit Secrets is set to the HTTPS URL of your Render service ending in `/api/v1`:
+  ```toml
+  RECOVERAI_API_URL = "https://<your-service>.onrender.com/api/v1"
+  ```
+- Ensure there is no trailing slash after `/api/v1`.
+
+### 3. Database is Empty on Fresh Deploy
+- RecoverAI includes safe auto-initialization. On startup, FastAPI detects missing/empty database tables and automatically seeds 5,000 customers and 50,000 payments deterministically (`seed=42`). No manual database migration or seed commands are required.
 
 ---
 
-## 6. Health Checks & Startup Ordering
+## 7. Buildathon Limitations & Production Roadmap
 
-RecoverAI defines container health probes:
-- **Backend Liveness**: `curl -f http://localhost:8000/api/v1/health/live` (checked every 15s).
-- **Backend Readiness**: `curl -f http://localhost:8000/api/v1/health/ready` (validates database query & ML model loading).
-- **Startup Order Enforcement**: In `docker-compose.yml`, `frontend` declares:
-  ```yaml
-  depends_on:
-    backend:
-      condition: service_healthy
-  ```
-  This guarantees that Streamlit will never attempt to connect before FastAPI is ready to receive requests.
-
----
-
-## 7. Container Lifecycle & Graceful Shutdown
-
-- **Stop Containers**:
-  ```bash
-  docker compose stop
-  ```
-- **Stop and Remove Containers & Networks**:
-  ```bash
-  docker compose down
-  ```
-- **View Live Container Logs**:
-  ```bash
-  docker compose logs -f
-  ```
-- **Inspect Specific Service Logs**:
-  ```bash
-  docker compose logs -f backend
-  docker compose logs -f frontend
-  ```
+- **Single-Node SQLite**: For the Razorpay AI Buildathon, SQLite provides a self-contained, deterministic database with zero infrastructure dependencies. In enterprise production, this should be replaced with managed AWS Aurora PostgreSQL or Google Cloud SQL with read replicas and PgBouncer connection pooling.
+- **Stateless Cloud Worker Storage**: On free-tier platforms without persistent disks, ephemeral storage will re-seed data automatically if the container is destroyed. Seed records are completely deterministic and idempotent.
+- **Synthetic Data**: All transaction records, customer details, and card profiles are generated synthetically. Zero real card numbers (PANs) or customer PII are stored or processed.

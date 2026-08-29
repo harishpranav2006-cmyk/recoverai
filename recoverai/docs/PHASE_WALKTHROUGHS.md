@@ -17,7 +17,8 @@ This document serves as the permanent chronological record of development, archi
 | **Phase 7** | End-to-End Integration, QA, Reliability & Readiness | **COMPLETE** | 192 / 192 |
 | **Phase 8** | Production Polish, Containerization & Deployment | **COMPLETE** | 199 / 199 |
 | **Phase 9** | Final Buildathon Submission & Pitch Package | **COMPLETE / SUBMITTED** | 199 / 199 |
-| **Post-9 Polish** | Dashboard Data Contract Fix & High-Contrast Theme | **VERIFIED & OPERATIONAL** | **205 / 205** |
+| **Post-9 Polish** | Dashboard Data Contract Fix & High-Contrast Theme | **VERIFIED & OPERATIONAL** | 205 / 205 |
+| **Phase 8 (Cloud)** | Buildathon Cloud Deployment & Production Polish (Render + Streamlit Cloud) | **COMPLETE** | **235 / 235** |
 
 ---
 
@@ -182,3 +183,84 @@ Resolve frontend-backend data contract discrepancy (`KeyError: 'recovery_rate'`)
   - Vibrant semantic accents: `#3B82F6` (Primary), `#22C55E` (Success), `#F59E0B` (Warning), `#EF4444` (Danger), `#06B6D4` (Info)
 - **Regression Unit Tests (`tests/test_dashboard_components.py`)**: Added 6 targeted unit and regression tests asserting API response schemas and schema mismatch error handling.
 - **Verification**: **205 / 205 automated tests passing (100% green)** across the entire test suite. All 7 dashboard pages verified operational with 0 runtime errors.
+
+---
+
+## Phase 8 (Cloud Readiness): Buildathon Cloud Deployment & Production Polish
+
+### 1. Objective
+Prepare RecoverAI for full end-to-end cloud deployment for the Razorpay AI Buildathon using Render (FastAPI Backend) and Streamlit Community Cloud (Frontend Dashboard) while maintaining 100% test integrity, deterministic demo behavior, safe database auto-initialization, and dynamic configuration.
+
+### 2. Deployment Architecture
+```
+                USER (Judge / Evaluator)
+                           │
+                           ▼
+        Streamlit Community Cloud (Frontend)
+          (dashboard/app.py • 7 Interactive Pages)
+                           │
+                           │ HTTPS / REST (JSON)
+                           ▼
+              Render Web Service (Backend)
+         (FastAPI / Uvicorn • Dynamic $PORT • 0.0.0.0)
+                           │
+        ┌──────────────────┼──────────────────┐
+        │                  │                  │
+        ▼                  ▼                  ▼
+    ML Inference    Decision Engine    Payment Simulator
+(Calibrated Logistic  (14-Step Safe     (Realistic Gateway
+  Regression + SHAP)    Policy Matrix)      Physics Sandbox)
+        │                  │                  │
+        └──────────────────┼──────────────────┘
+                           │
+                           ▼
+             SQLite Prototype Database
+       (recoverai.db • Auto-Initialized & Seeded)
+```
+
+### 3. Implementation Details & Architectural Decisions
+- **ML Artifact Availability (`.gitignore`, `ml/artifacts/`)**:
+  - Un-ignored essential trained artifacts: `model.joblib` (7.2 KB), `preprocessor.joblib` (9.3 KB), `shap_explainer.joblib` (306 KB), `feature_columns.json`, `model_metadata.json`, and `evaluation_report.json`.
+  - Total artifact weight is ~330 KB, ensuring instantaneous git cloning and zero model training latency on Render.
+- **Safe Database Auto-Initialization (`backend/init_db.py`, `backend/main.py`)**:
+  - Implemented FastAPI `lifespan` context manager executing `initialize_database()` on startup.
+  - Automatically verifies tables (`Base.metadata.create_all`).
+  - Checks customer row count: if empty (`count == 0`), seeds from synthetic CSVs or generates deterministic synthetic data (`seed=42`).
+  - Idempotent: if data already exists, skips seeding in 0.001s, preventing duplicate records or slow cold starts.
+  - Clearly documented: SQLite is utilized as an autonomous single-node database for the Buildathon prototype; production scaling would transition to managed PostgreSQL.
+- **Dynamic Cloud API Configuration (`dashboard/config.py`, `dashboard/api_client.py`)**:
+  - Implemented `get_api_base_url()` with 3-tier priority:
+    1. Streamlit Secrets (`st.secrets["RECOVERAI_API_URL"]` or `["API_BASE_URL"]`)
+    2. Environment Variable (`os.getenv("RECOVERAI_API_URL")` or `os.getenv("API_BASE_URL")`)
+    3. Local fallback (`http://localhost:8000/api/v1`)
+  - Updated `APIClient` to dynamically resolve URL and timeout parameters.
+- **CORS & Origin Security (`backend/config.py`, `backend/main.py`)**:
+  - Configured `CORSMiddleware` with `allow_origin_regex=r"https://.*\.streamlit\.app"` allowing any Streamlit Community Cloud app instance while protecting non-browser clients.
+  - Preserved local development origins (`localhost:8501`, `127.0.0.1:8501`, `localhost:3000`).
+- **Dynamic Port & Host Binding (`backend/config.py`, `Dockerfile`, `render.yaml`)**:
+  - Render dynamically injects `$PORT`. Configured `Settings.app_port` to resolve `PORT` environment variable with fallback to `8000`.
+  - Configured host binding to `0.0.0.0`.
+- **System Diagnostics Infrastructure Page (`dashboard/pages/system.py`)**:
+  - Eliminated hardcoded `localhost:8000/docs` and `redoc` links.
+  - Dynamically computes OpenAPI and ReDoc documentation URLs from `api_client.base_url`.
+  - Displays real-time health across 5 core subsystems: Frontend, Backend API, Database, ML Model, and Simulator.
+  - Shows friendly, helpful diagnostics banner if the backend is waking up or temporarily unavailable.
+- **Render Infrastructure-as-Code (`render.yaml`)**:
+  - Defined Python web service blueprint with build command `pip install -r requirements.txt`, start command `python -m uvicorn backend.main:app --host 0.0.0.0 --port $PORT`, and live health probe path `/api/v1/health/live`.
+- **Docker Hardening (`Dockerfile`)**:
+  - Updated `Dockerfile` backend target with `ENV PORT=8000` and `sh -c "exec python -m uvicorn ... --port ${PORT:-8000}"`.
+
+### 4. Verification & Validation Metrics
+- **Automated Test Suite**: **235 / 235 tests passing (100% green in ~40s)**.
+  - Unit tests for database auto-initialization idempotence.
+  - Unit tests for ML artifact presence and integrity.
+  - Unit tests for dynamic PORT, HOST, and API URL resolution priority.
+  - Unit tests for Render blueprint configuration validity.
+  - Unit tests for health probes (`/api/v1/health`, `/live`, `/ready`).
+- **Secret & Safety Audit**: 0 hardcoded credentials, 0 Windows-specific path separators.
+- **Linux Compatibility**: All path operations utilize `pathlib.Path` relative to project root.
+
+### 5. Known Limitations & Buildathon Considerations
+- **SQLite Prototype Storage**: SQLite is chosen for simplicity, determinism, and zero external dependency footprint during buildathon evaluations. For high-concurrency production deployments across multi-region clusters, a managed PostgreSQL instance with connection pooling (PgBouncer) should be provisioned.
+- **Render Free Tier Spin-Down**: On Render's free tier, services spin down after 15 minutes of inactivity. Initial wake-up may take 30–50 seconds. The Streamlit dashboard includes clear telemetry and retry controls explaining this behavior to judges.
+

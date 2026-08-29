@@ -1,0 +1,38 @@
+{
+  "model_name": "Logistic Regression (Baseline)",
+  "model_type": "CalibratedClassifierCV",
+  "training_timestamp": "2026-08-22T17:28:34.775447",
+  "random_seed": 42,
+  "dataset_rows": 13272,
+  "train_samples": 9290,
+  "val_samples": 1991,
+  "test_samples": 1991,
+  "num_features": 75,
+  "is_calibrated": true,
+  "best_metrics": {
+    "model_name": "Logistic Regression (Baseline) (Calibrated)",
+    "accuracy": 0.6062,
+    "precision": 0.6252,
+    "recall": 0.8296,
+    "f1_score": 0.713,
+    "roc_auc": 0.6252,
+    "pr_auc": 0.6991,
+    "brier_score": 0.2309,
+    "log_loss": 0.6534,
+    "confusion_matrix": [
+      [
+        233,
+        584
+      ],
+      [
+        200,
+        974
+      ]
+    ]
+  },
+  "temporal_validation_metrics": {
+    "accuracy": 0.6177,
+    "roc_auc": 0.6163,
+    "f1_score": 0.7252
+  }
+}

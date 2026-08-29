@@ -1,0 +1,39 @@
+# ==============================================================================
+# RecoverAI — Render Infrastructure as Code (Blueprint)
+# ==============================================================================
+# Deploys the RecoverAI FastAPI backend on Render's Python runtime.
+# https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: recoverai-api
+    runtime: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/v1/health/live
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: APP_ENV
+        value: production
+      - key: DEMO_MODE
+        value: "true"
+      - key: SIMULATION_MODE
+        value: "true"
+      - key: LLM_PROVIDER
+        value: mock
+      - key: DATABASE_URL
+        value: sqlite:///./recoverai.db
+      - key: CORS_ALLOWED_ORIGINS
+        value: "http://localhost:8501,http://127.0.0.1:8501,http://localhost:3000,http://localhost:8000,https://share.streamlit.io,*"
+      - key: LOG_LEVEL
+        value: INFO
+      - key: HIGH_CONFIDENCE_THRESHOLD
+        value: "0.65"
+      - key: OUTREACH_THRESHOLD
+        value: "0.45"
+      - key: MAX_RETRY_ATTEMPTS
+        value: "3"

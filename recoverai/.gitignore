@@ -32,10 +32,12 @@ desktop.ini
 *.db
 *.sqlite3
 
-# ML artifacts
-ml/artifacts/*.joblib
-ml/artifacts/*.pkl
-ml/artifacts/*.json
+# ML artifacts — keep required model files, ignore large intermediates
+# ml/artifacts/*.joblib   — UN-IGNORED: required for cloud deployment
+# ml/artifacts/*.pkl      — UN-IGNORED: required for cloud deployment
+# ml/artifacts/*.json     — UN-IGNORED: required for cloud deployment
+ml/artifacts/*.npy
+ml/artifacts/*.h5
 
 # Data (keep structure, ignore generated files)
 data/synthetic/*.csv

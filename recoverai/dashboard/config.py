@@ -8,9 +8,51 @@ from __future__ import annotations
 
 import os
 
-# API Configuration
-API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000/api/v1")
-API_TIMEOUT_SECONDS = int(os.getenv("API_TIMEOUT_SECONDS", "15"))
+# API Configuration — Cloud Environment & Streamlit Secrets Resolution
+def get_api_base_url() -> str:
+    """
+    Resolves the FastAPI backend base URL using the following priority:
+    1. Streamlit secrets (`st.secrets["RECOVERAI_API_URL"]` or `st.secrets["API_BASE_URL"]`)
+    2. Environment variables (`RECOVERAI_API_URL` or `API_BASE_URL`)
+    3. Default local development fallback (`http://localhost:8000/api/v1`)
+    """
+    # 1. Check Streamlit Secrets (for Streamlit Community Cloud)
+    try:
+        import streamlit as st
+        if hasattr(st, "secrets"):
+            if "RECOVERAI_API_URL" in st.secrets:
+                val = str(st.secrets["RECOVERAI_API_URL"]).strip().rstrip("/")
+                if val:
+                    return val
+            if "API_BASE_URL" in st.secrets:
+                val = str(st.secrets["API_BASE_URL"]).strip().rstrip("/")
+                if val:
+                    return val
+    except Exception:
+        pass
+
+    # 2. Check Environment Variables
+    env_url = os.getenv("RECOVERAI_API_URL") or os.getenv("API_BASE_URL")
+    if env_url and env_url.strip():
+        return env_url.strip().rstrip("/")
+
+    # 3. Local fallback
+    return "http://localhost:8000/api/v1"
+
+
+def get_api_timeout_seconds() -> int:
+    """Resolves API client timeout from secrets, environment, or default (15s)."""
+    try:
+        import streamlit as st
+        if hasattr(st, "secrets") and "API_TIMEOUT_SECONDS" in st.secrets:
+            return int(st.secrets["API_TIMEOUT_SECONDS"])
+    except Exception:
+        pass
+    return int(os.getenv("API_TIMEOUT_SECONDS", "15"))
+
+
+API_BASE_URL = get_api_base_url()
+API_TIMEOUT_SECONDS = get_api_timeout_seconds()
 
 # Application Metadata
 APP_TITLE = "RecoverAI — Autonomous AI Revenue Recovery"

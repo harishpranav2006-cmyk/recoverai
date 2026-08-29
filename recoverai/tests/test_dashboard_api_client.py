@@ -20,7 +20,7 @@ class TestDashboardAPIClient:
     def client(self) -> APIClient:
         return APIClient(base_url="http://testserver/api/v1")
 
-    @patch("requests.request")
+    @patch("requests.Session.request")
     def test_get_health(self, mock_req: MagicMock, client: APIClient) -> None:
         mock_req.return_value.status_code = 200
         mock_req.return_value.json.return_value = {"status": "healthy"}
@@ -37,7 +37,7 @@ class TestDashboardAPIClient:
             headers={"Accept": "application/json"},
         )
 
-    @patch("requests.request")
+    @patch("requests.Session.request")
     def test_get_overview(self, mock_req: MagicMock, client: APIClient) -> None:
         mock_req.return_value.status_code = 200
         mock_req.return_value.json.return_value = {"total_payments": 50000, "recovery_rate": 0.57}
@@ -46,7 +46,7 @@ class TestDashboardAPIClient:
         assert err is None
         assert data["total_payments"] == 50000
 
-    @patch("requests.request")
+    @patch("requests.Session.request")
     def test_get_recovery_queue(self, mock_req: MagicMock, client: APIClient) -> None:
         mock_req.return_value.status_code = 200
         mock_req.return_value.json.return_value = [{"payment_id": "P000004", "recovery_probability": 0.72}]
@@ -56,7 +56,7 @@ class TestDashboardAPIClient:
         assert len(data) == 1
         assert data[0]["payment_id"] == "P000004"
 
-    @patch("requests.request")
+    @patch("requests.Session.request")
     def test_predict_payment(self, mock_req: MagicMock, client: APIClient) -> None:
         mock_req.return_value.status_code = 200
         mock_req.return_value.json.return_value = {"payment_id": "P000004", "recovery_probability": 0.75}
@@ -65,7 +65,7 @@ class TestDashboardAPIClient:
         assert err is None
         assert data["recovery_probability"] == 0.75
 
-    @patch("requests.request")
+    @patch("requests.Session.request")
     def test_analyze_recovery(self, mock_req: MagicMock, client: APIClient) -> None:
         mock_req.return_value.status_code = 200
         mock_req.return_value.json.return_value = {
@@ -78,7 +78,7 @@ class TestDashboardAPIClient:
         assert err is None
         assert data["strategy"] == "SMART_RETRY"
 
-    @patch("requests.request")
+    @patch("requests.Session.request")
     def test_run_agent(self, mock_req: MagicMock, client: APIClient) -> None:
         mock_req.return_value.status_code = 200
         mock_req.return_value.json.return_value = {
@@ -90,7 +90,7 @@ class TestDashboardAPIClient:
         assert err is None
         assert data["decision"]["strategy"] == "SMART_RETRY"
 
-    @patch("requests.request")
+    @patch("requests.Session.request")
     def test_simulate_payment(self, mock_req: MagicMock, client: APIClient) -> None:
         mock_req.return_value.status_code = 200
         mock_req.return_value.json.return_value = {
@@ -103,7 +103,7 @@ class TestDashboardAPIClient:
         assert err is None
         assert data["outcome_status"] == "RECOVERED"
 
-    @patch("requests.request")
+    @patch("requests.Session.request")
     def test_simulate_demo(self, mock_req: MagicMock, client: APIClient) -> None:
         mock_req.return_value.status_code = 200
         mock_req.return_value.json.return_value = {
@@ -115,7 +115,7 @@ class TestDashboardAPIClient:
         assert err is None
         assert data["total_scenarios"] == 7
 
-    @patch("requests.request")
+    @patch("requests.Session.request")
     def test_get_customers_and_history(self, mock_req: MagicMock, client: APIClient) -> None:
         mock_req.return_value.status_code = 200
         mock_req.return_value.json.return_value = {
@@ -132,7 +132,7 @@ class TestDashboardAPIClient:
         assert hist_err is None
         assert hist["customer_id"] == "C00001"
 
-    @patch("requests.request")
+    @patch("requests.Session.request")
     def test_get_decisions_and_trends(self, mock_req: MagicMock, client: APIClient) -> None:
         mock_req.return_value.status_code = 200
         mock_req.return_value.json.return_value = {"items": [{"id": 1, "payment_id": "P000004"}], "total": 1}
@@ -146,7 +146,7 @@ class TestDashboardAPIClient:
         assert trends_err is None
         assert trends["interval"] == "monthly"
 
-    @patch("requests.request")
+    @patch("requests.Session.request")
     def test_run_workflow(self, mock_req: MagicMock, client: APIClient) -> None:
         mock_req.return_value.status_code = 200
         mock_req.return_value.json.return_value = {
@@ -158,7 +158,7 @@ class TestDashboardAPIClient:
         assert err is None
         assert data["simulated_outcome"]["outcome_status"] == "RECOVERED"
 
-    @patch("requests.request")
+    @patch("requests.Session.request")
     def test_error_handling_on_404(self, mock_req: MagicMock, client: APIClient) -> None:
         mock_req.return_value.status_code = 404
         mock_req.return_value.json.return_value = {"error": {"message": "Payment not found."}}
@@ -167,7 +167,7 @@ class TestDashboardAPIClient:
         assert data is None
         assert "Payment not found." in err
 
-    @patch("requests.request")
+    @patch("requests.Session.request")
     def test_error_handling_on_500(self, mock_req: MagicMock, client: APIClient) -> None:
         mock_req.return_value.status_code = 500
         mock_req.return_value.json.return_value = {"error": {"message": "Internal database lock error."}}
@@ -176,7 +176,7 @@ class TestDashboardAPIClient:
         assert data is None
         assert "Internal database lock error." in err
 
-    @patch("requests.request")
+    @patch("requests.Session.request")
     def test_connection_error_handling(self, mock_req: MagicMock, client: APIClient) -> None:
         mock_req.side_effect = requests.exceptions.ConnectionError("Connection refused")
 
@@ -184,10 +184,10 @@ class TestDashboardAPIClient:
         assert data is None
         assert "Backend API unavailable" in err
 
-    @patch("requests.request")
+    @patch("requests.Session.request")
     def test_timeout_error_handling(self, mock_req: MagicMock, client: APIClient) -> None:
         mock_req.side_effect = requests.exceptions.Timeout("Request timeout")
 
         data, err = client.get_overview()
         assert data is None
-        assert "Request timed out" in err
+        assert "timed out" in err

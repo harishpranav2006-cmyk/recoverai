@@ -33,7 +33,7 @@ COPY dashboard/ ./dashboard/
 COPY data/ ./data/
 COPY docs/ ./docs/
 COPY scripts/ ./scripts/
-COPY recoverai.db .
+COPY recoverai.db* ./
 
 # Create unprivileged user for security hardening
 RUN useradd -m -u 1001 appuser && \
@@ -49,7 +49,8 @@ EXPOSE 8000
 HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:8000/api/v1/health/live || exit 1
 
-CMD ["python", "-m", "uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+ENV PORT=8000
+CMD ["sh", "-c", "exec python -m uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
 
 # ------------------------------------------------------------------------------
 # Target: Frontend Dashboard (Streamlit)

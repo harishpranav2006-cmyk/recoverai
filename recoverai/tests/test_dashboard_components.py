@@ -60,9 +60,12 @@ class TestDashboardTheme:
             assert key in COLORS, f"Missing backwards-compatible alias: '{key}'"
 
     def test_colors_are_valid_hex(self) -> None:
-        """Verifies all color values in COLORS are valid 6-digit hex codes."""
+        """Verifies all solid color values in COLORS are valid 6-digit hex codes.
+        Skips rgba() and linear-gradient() entries used for glassmorphism and gradients."""
         hex_pattern = re.compile(r"^#[0-9A-Fa-f]{6}$")
         for key, val in COLORS.items():
+            if val.startswith("rgba(") or val.startswith("linear-gradient("):
+                continue
             assert hex_pattern.match(val), f"Invalid hex color for '{key}': '{val}'"
 
     def test_high_contrast_text_guarantee(self) -> None:

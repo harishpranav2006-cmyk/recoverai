@@ -39,8 +39,8 @@ def setup_demo_environment() -> bool:
 
         if cust_count == 0 or pmt_count == 0:
             print("      ⚠ Empty database detected. Seeding from synthetic generator...")
-            from ml.data_generator import generate_and_save_data
-            generate_and_save_data(seed=42)
+            from backend.init_db import initialize_database
+            initialize_database()
             print("      ✓ Synthetic dataset successfully generated and persisted.")
     finally:
         db.close()

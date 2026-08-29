@@ -12,7 +12,12 @@ from typing import Any, Dict, List, Optional, Tuple
 import requests
 import streamlit as st
 
-from dashboard.config import API_BASE_URL, API_TIMEOUT_SECONDS
+from dashboard.config import (
+    API_BASE_URL,
+    API_TIMEOUT_SECONDS,
+    get_api_base_url,
+    get_api_timeout_seconds,
+)
 
 logger = logging.getLogger("recoverai.dashboard.api_client")
 
@@ -20,9 +25,10 @@ logger = logging.getLogger("recoverai.dashboard.api_client")
 class APIClient:
     """Client for interacting with RecoverAI FastAPI REST endpoints with connection pooling."""
 
-    def __init__(self, base_url: str = API_BASE_URL, timeout: int = API_TIMEOUT_SECONDS):
-        self.base_url = base_url.rstrip("/")
-        self.timeout = timeout
+    def __init__(self, base_url: Optional[str] = None, timeout: Optional[int] = None):
+        resolved_url = base_url if base_url is not None else get_api_base_url()
+        self.base_url = resolved_url.rstrip("/")
+        self.timeout = timeout if timeout is not None else get_api_timeout_seconds()
         self._session = requests.Session()
         adapter = requests.adapters.HTTPAdapter(pool_connections=20, pool_maxsize=20, max_retries=1)
         self._session.mount("http://", adapter)
