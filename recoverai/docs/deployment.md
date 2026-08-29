@@ -60,18 +60,18 @@ Repository: `https://github.com/harishpranav2006-cmyk/recoverai.git`
 
 ---
 
-### Step B: Deploy FastAPI Backend on Render
+### Step B: Deploy FastAPI Backend on Render (Docker Runtime)
 
 1. Log in to [Render Dashboard](https://dashboard.render.com).
-2. Click **New +** → **Web Service** (or use **Blueprint** pointing to `render.yaml`).
+2. Click **New +** → **Web Service** (or click **New +** → **Blueprint** selecting `render.yaml`).
 3. Connect your GitHub repository: `harishpranav2006-cmyk/recoverai`.
 4. Configure service settings:
    - **Name**: `recoverai-api`
    - **Region**: Oregon (or nearest available)
    - **Branch**: `main`
-   - **Runtime**: `Python 3`
-   - **Build Command**: `pip install -r requirements.txt`
-   - **Start Command**: `python -m uvicorn backend.main:app --host 0.0.0.0 --port $PORT`
+   - **Root Directory**: `.` (leave blank / default root)
+   - **Runtime**: `Docker`
+   - **Dockerfile Path**: `./Dockerfile`
    - **Plan Type**: `Free`
 5. Configure Environment Variables:
    - `APP_ENV`: `production`
@@ -80,7 +80,7 @@ Repository: `https://github.com/harishpranav2006-cmyk/recoverai.git`
    - `LLM_PROVIDER`: `mock`
    - `DATABASE_URL`: `sqlite:///./recoverai.db`
    - `CORS_ALLOWED_ORIGINS`: `https://share.streamlit.io,https://*.streamlit.app,http://localhost:8501`
-   - `PYTHON_VERSION`: `3.11.9`
+   - `PORT`: (injected automatically by Render)
 6. Click **Create Web Service**.
 7. Once deployed, copy your public service URL (e.g., `https://recoverai-api.onrender.com`).
 
@@ -92,11 +92,15 @@ Repository: `https://github.com/harishpranav2006-cmyk/recoverai.git`
 2. Click **New app**.
 3. Select your repository: `harishpranav2006-cmyk/recoverai`.
 4. Set **Branch** to `main`.
-5. Set **Main file path** to `dashboard/app.py`.
+5. Set **Main file path** to:
+   ```
+   recoverai/dashboard/app.py
+   ```
+   *(Note: Since the application lives in the `recoverai/` directory within the repository, specify `recoverai/dashboard/app.py`)*
 6. Click **Advanced settings...** → **Secrets**.
 7. Paste your Render backend URL into the secrets configuration:
    ```toml
-   RECOVERAI_API_URL = "https://recoverai-api.onrender.com/api/v1"
+   RECOVERAI_API_URL = "https://<your-service>.onrender.com/api/v1"
    API_TIMEOUT_SECONDS = 25
    ```
 8. Click **Save**, then click **Deploy!**.

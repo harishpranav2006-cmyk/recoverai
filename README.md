@@ -4,13 +4,26 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-green.svg)](https://fastapi.tiangolo.com)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.29%2B-red.svg)](https://streamlit.io)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://docker.com)
-[![Tests](https://img.shields.io/badge/Tests-199%20Passing-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-235%20Passing-brightgreen.svg)]()
 [![Coverage](https://img.shields.io/badge/Coverage-84%25-brightgreen.svg)]()
 [![Status](https://img.shields.io/badge/Status-Buildathon%20Submission%20Ready-brightgreen.svg)]()
 
 > **Razorpay AI Buildathon Prototype Submission**  
 > **Track:** *Autonomous AI Revenue Recovery for Recurring & High-Velocity Payment Failures*  
 > **Environment:** *Synthetic Data • Deterministic Simulations • Zero Real Money Transactions*
+
+### 🌐 Public Cloud Deployment Endpoints
+
+```
+LIVE DEMO:
+[STREAMLIT URL AFTER DEPLOYMENT]
+
+BACKEND API:
+[RENDER URL AFTER DEPLOYMENT]
+
+SWAGGER:
+[RENDER URL]/docs
+```
 
 Please see the main codebase and comprehensive documentation in [`recoverai/`](file:///e:/education/razor%20pay%20buildthon/recoverai):
 
@@ -28,6 +41,26 @@ Please see the main codebase and comprehensive documentation in [`recoverai/`](f
 - **5-Minute Buildathon Pitch Guide**: [`recoverai/docs/demo.md`](file:///e:/education/razor%20pay%20buildthon/recoverai/docs/demo.md)
 - **Production REST API Documentation**: [`recoverai/docs/api.md`](file:///e:/education/razor%20pay%20buildthon/recoverai/docs/api.md)
 - **System Architecture Specification**: [`recoverai/docs/architecture.md`](file:///e:/education/razor%20pay%20buildthon/recoverai/docs/architecture.md)
+
+### Cloud Deployment (Render + Streamlit Community Cloud)
+
+1. **FastAPI Backend on Render (Docker Runtime)**:
+   - **Repository**: `harishpranav2006-cmyk/recoverai`
+   - **Runtime**: `Docker`
+   - **Dockerfile Path**: `./Dockerfile` (or Root Directory: `recoverai`, Dockerfile: `Dockerfile`)
+   - **Health Check Path**: `/api/v1/health/live`
+   - **Auto-Provision**: Or click **New +** → **Blueprint** pointing to `render.yaml`.
+
+2. **Frontend Dashboard on Streamlit Community Cloud**:
+   - **Repository**: `harishpranav2006-cmyk/recoverai`
+   - **Main file path**: `recoverai/dashboard/app.py`
+   - **App Settings → Secrets**:
+     ```toml
+     RECOVERAI_API_URL = "https://<your-render-service>.onrender.com/api/v1"
+     API_TIMEOUT_SECONDS = 25
+     ```
+
+---
 
 ### Quickstart with Docker Compose
 ```bash

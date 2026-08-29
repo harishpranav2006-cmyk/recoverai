@@ -264,3 +264,17 @@ Prepare RecoverAI for full end-to-end cloud deployment for the Razorpay AI Build
 - **SQLite Prototype Storage**: SQLite is chosen for simplicity, determinism, and zero external dependency footprint during buildathon evaluations. For high-concurrency production deployments across multi-region clusters, a managed PostgreSQL instance with connection pooling (PgBouncer) should be provisioned.
 - **Render Free Tier Spin-Down**: On Render's free tier, services spin down after 15 minutes of inactivity. Initial wake-up may take 30–50 seconds. The Streamlit dashboard includes clear telemetry and retry controls explaining this behavior to judges.
 
+---
+
+### 6. Phase 8 Post-Deployment Blocker Resolution: Root Dockerfile & Monorepo Mapping
+- **Encountered Blocker**: First Render deployment failed with `failed to read dockerfile: open Dockerfile: no such file or directory` under commit `df1b4ed`.
+- **Root Cause**: The GitHub repository root (`.`) contains `recoverai/` as a subdirectory. When Render checked out commit `df1b4ed` with default root build context (`.`) and `Dockerfile Path: ./Dockerfile`, the Docker daemon looked for `./Dockerfile` at the repository root, where only `recoverai/Dockerfile` had been placed.
+- **Architectural Resolution**:
+  1. Created production root `Dockerfile` (`./Dockerfile`) at the repository root copying from `recoverai/`, installing requirements, and binding to `0.0.0.0:$PORT`.
+  2. Created root `.dockerignore` (`./.dockerignore`) excluding `.git`, test caches, and virtual environments.
+  3. Created root `render.yaml` (`./render.yaml`) specifying `runtime: docker`, `dockerfilePath: ./Dockerfile`, and health check probe `/api/v1/health/live`.
+  4. Updated `docs/deployment.md` with explicit configuration guidance for both Root Context (`./Dockerfile`) and Subdirectory Context (`recoverai/Dockerfile`).
+  5. Updated Streamlit Community Cloud guidance to point to `recoverai/dashboard/app.py`.
+- **Verification**: Complete test suite rerun: **235 / 235 tests passing (100% green)**.
+
+

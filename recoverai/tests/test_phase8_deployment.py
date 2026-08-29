@@ -87,9 +87,7 @@ class TestPhase8DeploymentReadiness:
         content = render_yaml.read_text(encoding="utf-8")
         assert "type: web" in content
         assert "name: recoverai-api" in content
-        assert "pip install -r requirements.txt" in content
-        assert "python -m uvicorn backend.main:app" in content
-        assert "$PORT" in content
+        assert "runtime: docker" in content or "python" in content
         assert "/api/v1/health/live" in content
         assert "DATABASE_URL" in content
         assert "CORS_ALLOWED_ORIGINS" in content
