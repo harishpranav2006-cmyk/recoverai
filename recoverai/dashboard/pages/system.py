@@ -148,7 +148,7 @@ def render_system_page() -> None:
             st.markdown(f"**ReDoc Spec URL:** `{redoc_url}`")
             backend_env = "Render Cloud (Production)" if "onrender.com" in base_host else ("Localhost (Development)" if "localhost" in base_host or "127.0.0.1" in base_host else "Cloud / Remote")
             st.markdown(f"**Backend Environment:** `{backend_env}`")
-            frontend_env = "Streamlit Community Cloud" if "streamlit.app" in st.get_option("browser.serverAddress", "") else "Localhost Development"
+            frontend_env = "Streamlit Community Cloud"
             st.markdown(f"**Frontend Environment:** `{frontend_env}`")
 
 
