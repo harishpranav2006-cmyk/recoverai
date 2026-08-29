@@ -33,7 +33,6 @@ COPY dashboard/ ./dashboard/
 COPY data/ ./data/
 COPY docs/ ./docs/
 COPY scripts/ ./scripts/
-COPY recoverai.db* ./
 
 # Create unprivileged user for security hardening
 RUN useradd -m -u 1001 appuser && \

@@ -33,7 +33,6 @@ COPY recoverai/dashboard/ ./dashboard/
 COPY recoverai/data/ ./data/
 COPY recoverai/docs/ ./docs/
 COPY recoverai/scripts/ ./scripts/
-COPY recoverai/recoverai.db* ./
 
 # Security: Create non-root user
 RUN useradd -m -u 1001 appuser && \
