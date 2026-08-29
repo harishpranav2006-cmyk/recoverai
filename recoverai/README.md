@@ -12,6 +12,19 @@
 > **Track:** *Autonomous AI Revenue Recovery for Recurring & High-Velocity Payment Failures*  
 > **Environment:** *Synthetic Data • Deterministic Simulations • Zero Real Money Transactions*
 
+### 🌐 Public Cloud Deployment Endpoints
+
+```
+LIVE DEMO:
+[STREAMLIT URL AFTER DEPLOYMENT]
+
+BACKEND API:
+[RENDER URL AFTER DEPLOYMENT]
+
+SWAGGER:
+[RENDER URL]/docs
+```
+
 ---
 
 ## ⚡ Executive Summary & One-Line Pitch
@@ -384,6 +397,20 @@ python scripts/benchmark_performance.py
 - 🤖 **Decision Engine & AI Agent Guide**: [`docs/agent.md`](docs/agent.md)
 - 🧪 **Payment Simulator & State Machine**: [`docs/simulator.md`](docs/simulator.md)
 - 📊 **Dataset & Data Dictionary**: [`docs/data_dictionary.md`](docs/data_dictionary.md)
+
+---
+
+## ⚠️ Known Prototype Limitations & Production Roadmap
+
+1. **Autonomous Single-Node Storage (SQLite)**:
+   - For this buildathon prototype, SQLite is selected for its zero-dependency portability and instant deterministic initialization.
+   - *Enterprise Roadmap*: Production deployments handling thousands of write transactions per second would transition to a multi-AZ managed PostgreSQL cluster (e.g. AWS Aurora or GCP Cloud SQL) with read replicas and PgBouncer connection pooling.
+2. **Cloud Free-Tier Cold Starts (Render)**:
+   - On Render's free tier, background services sleep after 15 minutes of inactivity. The initial HTTP wake-up call may take 30–50 seconds.
+   - The Streamlit frontend includes built-in retry buttons, telemetry probes, and connection alerts explaining this state.
+3. **Simulated Payment Gateway**:
+   - All payment retries, card updates, and customer responses are executed within a realistic deterministic simulator modeling issuer decline codes, network timeouts, and fatigue.
+   - Zero real money transactions or customer contact are executed.
 
 ---
 

@@ -130,6 +130,27 @@ def render_system_page() -> None:
             st.markdown("Clean, structured, and searchable API documentation specification.")
             st.link_button("🌐 Open ReDoc", redoc_url, use_container_width=True)
 
+    st.divider()
+
+    # 4. Infrastructure & Environment Diagnostics (Part 8 compliance)
+    st.markdown("### 🌐 Infrastructure & Connectivity Metadata")
+    st.caption("Active runtime configuration, connectivity endpoints, and environment status (zero secrets exposed).")
+
+    with st.container(border=True):
+        e1, e2 = st.columns(2)
+        with e1:
+            st.markdown(f"**REST API Base URL:** `{api_client.base_url}`")
+            st.markdown(f"**API Health Endpoint:** `{api_client.base_url}/health`")
+            st.markdown(f"**Liveness Probe:** `{api_client.base_url}/health/live`")
+            st.markdown(f"**Readiness Probe:** `{api_client.base_url}/health/ready`")
+        with e2:
+            st.markdown(f"**Swagger Docs URL:** `{docs_url}`")
+            st.markdown(f"**ReDoc Spec URL:** `{redoc_url}`")
+            backend_env = "Render Cloud (Production)" if "onrender.com" in base_host else ("Localhost (Development)" if "localhost" in base_host or "127.0.0.1" in base_host else "Cloud / Remote")
+            st.markdown(f"**Backend Environment:** `{backend_env}`")
+            frontend_env = "Streamlit Community Cloud" if "streamlit.app" in st.get_option("browser.serverAddress", "") else "Localhost Development"
+            st.markdown(f"**Frontend Environment:** `{frontend_env}`")
+
 
 if __name__ in ("__main__", "__mp_main__"):
     render_system_page()
